@@ -7,6 +7,50 @@
   <meta property="og:title" content="AI Native 冒险 - 测试你的 AI 熟练度" />
   <meta property="og:description" content="9道题，测测你是 AI 难民还是 AI 原住民。" />
   <meta property="og:type" content="website" />
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    window._hmt = window._hmt || [];
+    function gtag() {
+      window.dataLayer.push(arguments);
+    }
+    gtag("js", new Date());
+    gtag("config", "G-XXXXXXXXXX");
+
+    // Baidu tongji: replace with your real hm id before production use.
+    (function () {
+      var hmId = "YOUR_BAIDU_HM_ID";
+      if (!hmId || hmId === "YOUR_BAIDU_HM_ID") return;
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?" + hmId;
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+
+    function trackQuestion(questionNum) {
+      if (typeof gtag === "function") {
+        gtag("event", "question_view", {
+          question_number: questionNum
+        });
+      }
+      if (window._hmt && Array.isArray(window._hmt)) {
+        window._hmt.push(["_trackEvent", "quiz", "question_view", String(questionNum)]);
+      }
+    }
+
+    function trackResult(score, level) {
+      if (typeof gtag === "function") {
+        gtag("event", "test_complete", {
+          score: score,
+          level: level
+        });
+      }
+      if (window._hmt && Array.isArray(window._hmt)) {
+        window._hmt.push(["_trackEvent", "quiz", "test_complete", String(level), Number(score)]);
+      }
+    }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap" rel="stylesheet" />
@@ -1487,6 +1531,9 @@
       questionText.textContent = q.q;
       questionIndex.textContent = `关卡 ${currentQuestion + 1} / ${questions.length}`;
       questionScore.textContent = `得分 ${toDisplayScore(rawScore)} / 100`;
+      if (typeof trackQuestion === "function") {
+        trackQuestion(currentQuestion + 1);
+      }
       const progressPercent = ((currentQuestion + 1) / questions.length) * 100;
       progressBar.style.width = `${progressPercent}%`;
       updateOrbitProgress(progressPercent);
@@ -1595,6 +1642,9 @@
       resultLevel.textContent = currentLevel.title;
       resultComment.textContent = `${currentLevel.subtitle}。${currentLevel.comment}`;
       hudRank.textContent = currentLevel.title;
+      if (typeof trackResult === "function") {
+        trackResult(displayScore, currentLevel.title);
+      }
 
       animateResult(displayScore);
       renderBadges(currentLevel);
