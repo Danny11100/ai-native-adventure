@@ -28,7 +28,7 @@
 ## 🚀 快速开始
 
 ```bash
-git clone https://github.com/yourname/ai-native-adventure.git
+git clone https://github.com/Danny11100/ai-native-adventure.git
 cd ai-native-adventure
 python -m http.server 8000
 
@@ -53,6 +53,3 @@ Vercel
 MIT License - 可自由修改和商用，保留署名即可。
 
 在线体验：https://ainative.pages.dev (https://ainative.pages.dev/)
-
-
----
