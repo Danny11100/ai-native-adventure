@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Native 冒险 | 游戏版评分</title>
+  <meta property="og:title" content="AI Native 冒险 - 测试你的 AI 熟练度" />
+  <meta property="og:description" content="9道题，测测你是 AI 难民还是 AI 原住民。" />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --night-top: #2c3e50;
+      --night-bottom: #1a1f36;
+      --paper: #f4e4c1;
+      --paper-deep: #ead8b0;
+      --ink: #483a2f;
+      --ink-soft: #75695f;
+      --rose: #e8b4b8;
+      --gold: #f9ca24;
+      --line: #c9ab73;
+      --radius: 18px;
+      --shadow: 0 18px 36px rgba(9, 14, 30, 0.35);
+      --title-font: "Caveat", "KaiTi", "STKaiti", cursive;
+      --body-font: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "SF Pro Rounded", "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      background: linear-gradient(165deg, var(--night-top), var(--night-bottom));
+      color: #f8f7f0;
+      font-family: var(--body-font);
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    .starfield,
+    .nebula,
+    .grid-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .starfield {
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: #fff8dd;
+      box-shadow: 0 0 8px rgba(249, 202, 36, 0.75);
+      opacity: 0.3;
+      animation: twinkle 4.5s ease-in-out infinite;
+      animation-delay: var(--delay, 0s);
+      animation-duration: var(--duration, 4s);
+    }
+
+    .nebula {
+      background:
+        radial-gradient(circle at 16% 82%, rgba(232, 180, 184, 0.18), transparent 38%),
+        radial-gradient(circle at 86% 20%, rgba(249, 202, 36, 0.14), transparent 34%);
+      filter: blur(10px);
+      opacity: 0.7;
+      z-index: 0;
+    }
+
+    .grid-overlay {
+      background:
+        radial-gradient(ellipse at top, rgba(255, 255, 255, 0.1), transparent 55%),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03), transparent 55%);
+      z-index: 0;
+    }
+
+    .app {
+      width: min(1080px, 95vw);
+      margin: 0 auto;
+      padding: clamp(0.55rem, 2vw, 1rem);
+      position: relative;
+      z-index: 2;
+    }
+
+    .shell {
+      background: rgba(14, 22, 42, 0.36);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 22px;
+      box-shadow: 0 18px 50px rgba(8, 13, 28, 0.5);
+      overflow: hidden;
+      backdrop-filter: blur(4px);
+      position: relative;
+      width: 100%;
+    }
+
+    .shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      pointer-events: none;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+      background: linear-gradient(90deg, rgba(249, 202, 36, 0.14), rgba(232, 180, 184, 0.15));
+      font-family: var(--body-font);
+      letter-spacing: 0.02em;
+      font-size: 0.86rem;
+      color: #fff8e6;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      font-weight: 700;
+      font-size: 1.03rem;
+    }
+
+    .brand-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 10px rgba(249, 202, 36, 0.8);
+    }
+
+    .topbar-pill {
+      color: rgba(255, 247, 224, 0.9);
+      border: 1px solid rgba(255, 237, 202, 0.35);
+      background: rgba(249, 202, 36, 0.15);
+      border-radius: 999px;
+      padding: 0.26rem 0.58rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .panel {
+      padding: clamp(0.75rem, 1.6vh, 1.2rem);
+      display: grid;
+      gap: clamp(0.55rem, 1.1vh, 0.9rem);
+    }
+
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.9rem;
+      margin-bottom: 0;
+    }
+
+    .hud-item {
+      background: rgba(244, 228, 193, 0.15);
+      border: 1px solid rgba(255, 232, 188, 0.4);
+      border-radius: 14px;
+      padding: 0.85rem 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hud-item::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--gold), transparent);
+    }
+
+    .hud-label {
+      display: block;
+      color: rgba(255, 244, 225, 0.72);
+      font-size: 0.72rem;
+      margin-bottom: 0.3rem;
+      letter-spacing: 0.06em;
+    }
+
+    .hud-value {
+      color: #fff6de;
+      font-size: 1.02rem;
+      font-weight: 700;
+    }
+
+    .hero-screen,
+    .question-screen,
+    .result-screen {
+      min-height: 500px;
+      background: var(--paper);
+      border: 2px solid rgba(201, 171, 115, 0.85);
+      border-radius: var(--radius);
+      padding: clamp(0.8rem, 1.7vh, 1.2rem);
+      position: relative;
+      overflow: visible;
+      color: var(--ink);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-screen::before,
+    .question-screen::before,
+    .result-screen::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 90% 0%, rgba(232, 180, 184, 0.2), transparent 40%);
+      pointer-events: none;
+    }
+
+    .result-screen::after {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border: 2px dashed rgba(125, 100, 61, 0.38);
+      border-radius: 12px;
+      transform: rotate(-0.55deg);
+      pointer-events: none;
+    }
+
+    .hero-wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      text-align: center;
+      padding: clamp(0.9rem, 2vh, 1.4rem) 1rem;
+      position: relative;
+      z-index: 1;
+      display: grid;
+      justify-items: center;
+    }
+
+    .shared-preview {
+      margin: 0 auto 1rem;
+      max-width: 620px;
+      padding: 0.72rem 0.95rem;
+      border-radius: 12px;
+      border: 1px dashed rgba(177, 111, 118, 0.6);
+      background: rgba(255, 244, 223, 0.78);
+      color: #6b5845;
+      text-align: left;
+    }
+
+    .shared-preview-title {
+      font-size: 0.86rem;
+      color: #a46c72;
+      font-weight: 700;
+      margin-bottom: 0.26rem;
+      letter-spacing: 0.03em;
+    }
+
+    .shared-preview-body {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.12rem;
+    }
+
+    .shared-preview-tip {
+      font-size: 0.85rem;
+      color: #806e5d;
+    }
+
+    .hero-kicker {
+      color: #9a6d6f;
+      letter-spacing: 0.14em;
+      font-size: 0.77rem;
+      margin-bottom: 0.9rem;
+      font-weight: 700;
+    }
+
+    .hero-title {
+      font-family: var(--title-font);
+      font-size: clamp(1.9rem, 4.3vw, 3.2rem);
+      line-height: 1.12;
+      letter-spacing: 0.02em;
+      margin-bottom: 0.75rem;
+      color: var(--ink);
+      text-shadow: 0 2px 0 rgba(255, 255, 255, 0.5);
+    }
+
+    .hero-title span {
+      color: #b16f76;
+    }
+
+    .hero-desc {
+      max-width: 640px;
+      margin: 0 auto 1.8rem;
+      color: var(--ink-soft);
+      line-height: 1.68;
+      font-size: 1.03rem;
+    }
+
+    .hero-ring {
+      width: clamp(165px, 24vw, 210px);
+      height: clamp(165px, 24vw, 210px);
+      margin: 0 auto 1.4rem;
+      border-radius: 50%;
+      border: 2px solid rgba(201, 171, 115, 0.9);
+      display: grid;
+      place-items: center;
+      position: relative;
+      box-shadow: inset 0 0 0 6px rgba(255, 255, 255, 0.26);
+      animation: ringFloat 6s ease-in-out infinite;
+    }
+
+    .hero-ring::before,
+    .hero-ring::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      border: 1px dashed rgba(177, 111, 118, 0.4);
+    }
+
+    .hero-ring::before {
+      width: 82%;
+      height: 82%;
+      animation: ringSpin 16s linear infinite;
+    }
+
+    .hero-ring::after {
+      width: 62%;
+      height: 62%;
+      animation: ringSpinReverse 14s linear infinite;
+    }
+
+    .hero-core {
+      width: clamp(64px, 9vw, 86px);
+      height: clamp(64px, 9vw, 86px);
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #fff7dd 0%, #f5c95b 38%, #e1a74e 100%);
+      box-shadow: 0 0 24px rgba(249, 202, 36, 0.45);
+    }
+
+    .btn {
+      appearance: none;
+      border: 0;
+      border-radius: 12px;
+      padding: 0.86rem 1.8rem;
+      min-height: 50px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.2;
+      font-family: var(--body-font);
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      color: #402c2d;
+      font-weight: 700;
+      background: linear-gradient(135deg, #f5cf6a, #f9ca24);
+      box-shadow: 0 8px 20px rgba(128, 97, 25, 0.32);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(104, 78, 20, 0.36);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #f3c8cb, var(--rose));
+      color: #5b373b;
+    }
+
+    .question-screen,
+    .result-screen {
+      display: none;
+    }
+
+    .question-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      gap: 1rem;
+      padding-top: 0.8rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .question-meta-label {
+      color: #755d48;
+      font-size: 0.95rem;
+      font-weight: 700;
+      min-width: 96px;
+    }
+
+    .progress-track {
+      --orbit-width: 184px;
+      --orbit-height: 92px;
+      flex: 1;
+      min-width: 210px;
+      height: 106px;
+      position: relative;
+      overflow: visible;
+      --progress: 0%;
+    }
+
+    .progress-track::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: var(--orbit-width);
+      height: var(--orbit-height);
+      transform: translateX(-50%);
+      border: 3px solid rgba(145, 107, 52, 0.45);
+      border-bottom: none;
+      border-radius: var(--orbit-width) var(--orbit-width) 0 0;
+    }
+
+    .progress-track::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 6px;
+      width: calc(var(--orbit-width) - 16px);
+      height: calc(var(--orbit-height) - 10px);
+      transform: translateX(-50%);
+      border: 1px dashed rgba(232, 180, 184, 0.7);
+      border-bottom: none;
+      border-radius: var(--orbit-width) var(--orbit-width) 0 0;
+    }
+
+    .progress-bar {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: var(--orbit-width) !important;
+      height: var(--orbit-height);
+      transform: translateX(-50%);
+      pointer-events: none;
+      background: transparent;
+    }
+
+    .progress-bar::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border: 3px solid var(--gold);
+      border-bottom: none;
+      border-radius: var(--orbit-width) var(--orbit-width) 0 0;
+      clip-path: inset(0 calc(100% - var(--progress)) 0 0);
+      filter: drop-shadow(0 0 8px rgba(249, 202, 36, 0.35));
+    }
+
+    .progress-bar::after {
+      content: "✦";
+      position: absolute;
+      left: calc(var(--ship-x, 0px) - 9px);
+      top: calc(var(--ship-y, 92px) - 9px);
+      width: 18px;
+      height: 18px;
+      display: grid;
+      place-items: center;
+      color: #fff6db;
+      font-size: 11px;
+      background: radial-gradient(circle at 30% 30%, #fffaf0 0%, #f8d05c 50%, #d99f36 100%);
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(249, 202, 36, 0.65);
+    }
+
+    .question-box {
+      background: rgba(255, 250, 238, 0.44);
+      border: 1px solid rgba(201, 171, 115, 0.6);
+      border-radius: 16px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .question-title {
+      font-size: clamp(1.2rem, 3vw, 1.86rem);
+      line-height: 1.45;
+      margin-bottom: 0.65rem;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .question-caption {
+      color: #8a7666;
+      font-size: 0.92rem;
+      letter-spacing: 0.04em;
+    }
+
+    .options {
+      display: grid;
+      gap: 0.8rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .option-btn {
+      width: 100%;
+      border: 1px solid rgba(201, 171, 115, 0.62);
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(253, 245, 227, 0.95), rgba(246, 233, 201, 0.95));
+      color: #4c3e33;
+      text-align: left;
+      padding: 0.95rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      cursor: pointer;
+      transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+      min-height: 62px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .option-btn::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -40%;
+      width: 40%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+      transition: left 0.3s ease;
+    }
+
+    .option-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(232, 180, 184, 0.95);
+      box-shadow: 0 8px 20px rgba(148, 97, 103, 0.2);
+    }
+
+    .option-btn:hover::before {
+      left: 120%;
+    }
+
+    .option-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.92;
+    }
+
+    .option-btn.selected {
+      border-color: rgba(232, 180, 184, 0.96);
+      box-shadow: 0 10px 24px rgba(161, 101, 108, 0.28);
+      background: linear-gradient(180deg, rgba(250, 236, 222, 1), rgba(246, 216, 220, 0.95));
+    }
+
+    .option-btn.dimmed {
+      opacity: 0.45;
+    }
+
+    .option-text {
+      font-size: 1.01rem;
+      font-weight: 500;
+      line-height: 1.5;
+    }
+
+    .option-points {
+      color: #a06d3d;
+      font-size: 0.88rem;
+      white-space: nowrap;
+      font-weight: 700;
+    }
+
+    .point-burst {
+      position: absolute;
+      right: 0.9rem;
+      top: -4px;
+      color: #a8782b;
+      font-size: 0.82rem;
+      animation: floatOut 1s ease forwards;
+      pointer-events: none;
+      text-shadow: 0 0 8px rgba(249, 202, 36, 0.45);
+      font-weight: 700;
+    }
+
+    .result-wrap {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0.9rem 1.1rem 1.45rem;
+    }
+
+    .result-title {
+      font-family: var(--title-font);
+      font-size: clamp(1.6rem, 4vw, 2.5rem);
+      letter-spacing: 0.04em;
+      line-height: 1.1;
+      margin-bottom: 0.62rem;
+      color: #5a4534;
+    }
+
+    .result-subtitle {
+      color: #867261;
+      max-width: 680px;
+      margin: 0 auto 1.3rem;
+      line-height: 1.66;
+    }
+
+    .score-orbit {
+      margin: 0 auto 1.2rem;
+      width: 230px;
+      height: 230px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: conic-gradient(var(--gold) 0deg, rgba(219, 185, 111, 0.18) 0deg);
+      position: relative;
+      box-shadow: 0 0 26px rgba(166, 122, 48, 0.22);
+      transition: background 0.3s ease;
+    }
+
+    .score-orbit::before {
+      content: "";
+      position: absolute;
+      width: 184px;
+      height: 184px;
+      border-radius: 50%;
+      background: rgba(244, 228, 193, 0.98);
+      border: 2px solid rgba(201, 171, 115, 0.55);
+    }
+
+    .score-number {
+      position: relative;
+      z-index: 1;
+      font-family: var(--body-font);
+      font-size: 2.9rem;
+      font-weight: 800;
+      color: #5a4330;
+    }
+
+    .score-max {
+      font-size: 1rem;
+      color: #8e785f;
+      margin-left: 0.24rem;
+    }
+
+    .result-level {
+      font-family: var(--title-font);
+      color: #ab6f76;
+      font-size: 1.7rem;
+      margin-bottom: 0.7rem;
+    }
+
+    .result-comment {
+      color: #6f5f50;
+      line-height: 1.76;
+      max-width: 640px;
+      margin: 0 auto 1.2rem;
+    }
+
+    .result-badges {
+      display: flex;
+      justify-content: center;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.2rem;
+    }
+
+    .badge {
+      border: 1px solid rgba(201, 171, 115, 0.65);
+      border-radius: 999px;
+      padding: 0.44rem 0.85rem;
+      font-size: 0.84rem;
+      color: #6a5642;
+      background: rgba(255, 245, 223, 0.95);
+      animation: badgeIn 0.45s ease forwards;
+      transform: scale(0.92);
+      opacity: 0;
+    }
+
+    .result-actions {
+      display: flex;
+      justify-content: center;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+      margin-top: 0.25rem;
+      padding: 0.2rem 0 0.3rem;
+    }
+
+    .btn-ghost {
+      background: rgba(255, 243, 211, 0.8);
+      border: 1px solid rgba(201, 171, 115, 0.7);
+      color: #6c5846;
+      box-shadow: 0 4px 10px rgba(80, 60, 30, 0.12);
+      font-family: var(--body-font);
+      text-transform: none;
+      letter-spacing: 0.03em;
+      font-weight: 600;
+      min-height: 50px;
+      line-height: 1.2;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(244, 228, 193, 0.97);
+      border: 1px solid rgba(201, 171, 115, 0.95);
+      color: #5d4a39;
+      padding: 0.65rem 1rem;
+      border-radius: 999px;
+      font-size: 0.86rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 99;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    .share-sheet-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(12, 16, 30, 0.45);
+      display: grid;
+      place-items: center;
+      z-index: 120;
+      padding: 1rem;
+    }
+
+    .share-sheet {
+      width: min(560px, 95vw);
+      background: var(--paper);
+      border: 2px solid rgba(201, 171, 115, 0.95);
+      border-radius: 18px;
+      box-shadow: 0 20px 38px rgba(15, 18, 32, 0.3);
+      padding: 1rem;
+      color: #5f4c3b;
+    }
+
+    .share-sheet-title {
+      font-family: var(--title-font);
+      font-size: 1.6rem;
+      color: #8f5f65;
+      margin-bottom: 0.3rem;
+    }
+
+    .share-sheet-subtitle {
+      font-size: 0.9rem;
+      color: #7a6654;
+      margin-bottom: 0.7rem;
+    }
+
+    .share-sheet-content {
+      width: 100%;
+      min-height: 170px;
+      max-height: 260px;
+      overflow: auto;
+      border-radius: 12px;
+      border: 1px dashed rgba(177, 111, 118, 0.6);
+      padding: 0.75rem;
+      background: rgba(255, 250, 238, 0.86);
+      color: #5a4535;
+      font-family: var(--body-font);
+      font-size: 0.93rem;
+      line-height: 1.6;
+      margin-bottom: 0.75rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .share-sheet-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.56rem;
+      flex-wrap: wrap;
+    }
+
+    .fade-in {
+      animation: fadeIn 0.45s ease forwards;
+    }
+
+    .fade-out {
+      animation: fadeOut 0.3s ease forwards;
+    }
+
+    .slide-in {
+      animation: slideIn 0.35s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes floatOut {
+      from {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(-22px);
+      }
+    }
+
+    @keyframes twinkle {
+      0% {
+        opacity: 0.18;
+        transform: scale(0.85);
+      }
+      50% {
+        opacity: 0.95;
+        transform: scale(1.08);
+      }
+      100% {
+        opacity: 0.28;
+        transform: scale(0.9);
+      }
+    }
+
+    @keyframes ringSpin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes ringSpinReverse {
+      from {
+        transform: rotate(360deg);
+      }
+      to {
+        transform: rotate(0deg);
+      }
+    }
+
+    @keyframes ringFloat {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-6px);
+      }
+    }
+
+    @keyframes badgeIn {
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        width: 96vw;
+        padding: 0.4rem;
+      }
+
+      .hud {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        padding: 0.78rem 0.85rem;
+      }
+
+      .question-meta {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.55rem 0.8rem;
+      }
+
+      .question-meta-label {
+        min-width: 0;
+        text-align: center;
+      }
+
+      .score-orbit {
+        width: 210px;
+        height: 210px;
+      }
+
+      .score-orbit::before {
+        width: 168px;
+        height: 168px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .app {
+        width: 96.5vw;
+        margin: 0 auto;
+        padding: 0.35rem;
+      }
+
+      .topbar {
+        padding: 0.72rem 0.78rem;
+      }
+
+      .brand {
+        font-size: 1rem;
+      }
+
+      .topbar-pill {
+        font-size: 0.72rem;
+        padding: 0.22rem 0.5rem;
+      }
+
+      .panel {
+        padding: 0.68rem;
+      }
+
+      .hero-screen,
+      .question-screen,
+      .result-screen {
+        padding: 0.86rem 0.78rem;
+        min-height: auto;
+      }
+
+      .result-screen::after {
+        inset: 9px;
+        transform: none;
+      }
+
+      .hero-wrap {
+        padding: 0.45rem 0.35rem 0.95rem;
+      }
+
+      .hero-title {
+        font-size: clamp(1.95rem, 9.2vw, 2.45rem);
+        line-height: 1.07;
+      }
+
+      .hero-desc {
+        font-size: 0.97rem;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+      }
+
+      .hero-ring {
+        width: 148px;
+        height: 148px;
+        margin-bottom: 0.9rem;
+      }
+
+      .hero-core {
+        width: 58px;
+        height: 58px;
+      }
+
+      .btn {
+        width: 100%;
+        min-height: 52px;
+        font-size: 1rem;
+      }
+
+      .progress-track {
+        min-width: 100%;
+        --orbit-width: 168px;
+        --orbit-height: 84px;
+        height: 96px;
+      }
+
+      .question-meta-label {
+        font-size: 0.92rem;
+      }
+
+      .question-title {
+        font-size: clamp(1.5rem, 7.5vw, 1.9rem);
+      }
+
+      .option-btn {
+        min-height: 66px;
+        padding: 0.92rem 0.9rem;
+      }
+
+      .option-text {
+        font-size: 1.03rem;
+      }
+
+      .result-actions {
+        flex-direction: column;
+        gap: 0.56rem;
+        margin-top: 0.18rem;
+      }
+
+      .result-wrap {
+        padding: 0.72rem 0.4rem 1rem;
+      }
+
+      .result-title {
+        font-size: clamp(2.05rem, 9vw, 2.45rem);
+      }
+
+      .result-subtitle {
+        font-size: 0.98rem;
+        line-height: 1.7;
+        margin-bottom: 1.05rem;
+      }
+
+      .result-comment {
+        font-size: 0.95rem;
+        line-height: 1.74;
+        margin-bottom: 0.95rem;
+      }
+
+      .result-badges {
+        margin-bottom: 0.95rem;
+      }
+
+      .result-actions .btn,
+      .result-actions .btn-ghost {
+        width: 100%;
+        min-height: 52px;
+        padding: 0.86rem 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="starfield"></div>
+  <div class="nebula"></div>
+  <div class="grid-overlay"></div>
+
+  <main class="app">
+    <section class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-dot"></span>
+          <span>AI Native 冒险</span>
+        </div>
+        <div class="topbar-pill">AI Native 测试</div>
+      </header>
+
+      <div class="panel">
+        <div class="hud">
+          <div class="hud-item">
+            <span class="hud-label">当前得分</span>
+            <span id="hud-score" class="hud-value">0 / 100</span>
+          </div>
+          <div class="hud-item">
+            <span class="hud-label">当前等级</span>
+            <span id="hud-rank" class="hud-value">待评估</span>
+          </div>
+        </div>
+
+        <section id="hero-screen" class="hero-screen fade-in">
+          <div class="hero-wrap">
+            <p class="hero-kicker">打工人生存测试</p>
+            <h1 class="hero-title">进入 <span>AI Native</span> 轨道</h1>
+            <div class="hero-ring">
+              <div class="hero-core"></div>
+            </div>
+            <p class="hero-desc">
+              回答 9 道日常工作场景题，系统会根据你的真实习惯给出 AI Native 等级。看看你是 AI 难民，还是已经进化成 AI 原住民。
+            </p>
+            <button id="start-btn" class="btn" type="button">启动任务</button>
+          </div>
+        </section>
+
+        <section id="question-screen" class="question-screen">
+          <div class="question-meta">
+            <span id="question-index" class="question-meta-label">关卡 1 / 9</span>
+            <div id="progress-track" class="progress-track">
+              <div id="progress-bar" class="progress-bar"></div>
+            </div>
+            <span id="question-score" class="question-meta-label">得分 0 / 100</span>
+          </div>
+
+          <div class="question-box">
+            <h2 id="question-text" class="question-title"></h2>
+            <p class="question-caption">选择最接近你真实习惯的选项</p>
+          </div>
+
+          <div id="options" class="options"></div>
+        </section>
+
+        <section id="result-screen" class="result-screen">
+            <div class="result-wrap">
+              <h2 class="result-title">评估完成</h2>
+            <p class="result-subtitle">你的 AI Native 画像已生成。看看这份评分准不准，再转给同事一起测一测。</p>
+
+            <div id="score-orbit" class="score-orbit">
+              <div class="score-number">
+                <span id="result-score">0</span><span id="result-max" class="score-max">/100</span>
+              </div>
+            </div>
+
+            <h3 id="result-level" class="result-level">AI 难民</h3>
+            <p id="result-comment" class="result-comment">还在用 2023 年的互联网？先测完再看你是不是最后一批纯手工打工人。</p>
+
+            <div id="result-badges" class="result-badges"></div>
+
+            <div class="result-actions">
+              <button id="restart-btn" class="btn btn-secondary" type="button">再测一次</button>
+              <button id="share-btn" class="btn btn-ghost" type="button">分享我的结果</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast">已复制</div>
+
+  <script>
+    const questions = [
+      {
+        q: "早上睁眼第一件事是？",
+        options: [
+          ["刷朋友圈或抖音", 2],
+          ["看天气和日程", 6],
+          ["让 AI 总结今天待办", 10],
+          ["和 AI 说早安并聊两句", 14]
+        ]
+      },
+      {
+        q: "写周报时你是？",
+        options: [
+          ["自己吭哧吭哧写", 2],
+          ["AI 生成后我改改", 6],
+          ["我口述要点，AI 扩写成人话", 12],
+          ["AI 写 AI 交，我都不知道写了啥", 14]
+        ]
+      },
+      {
+        q: "遇到不懂的东西，你会？",
+        options: [
+          ["百度或 Google", 4],
+          ["在知乎或小红书搜经验", 8],
+          ["直接问 AI，省得筛选", 12],
+          ["让 AI 对比 5 个来源再总结", 14]
+        ]
+      },
+      {
+        q: "用 AI 时你更像？",
+        options: [
+          ["大爷（直接提需求）", 6],
+          ["甲方（反复改需求）", 10],
+          ["同事（一起脑暴）", 12],
+          ["产品经理（写 PRD 给它）", 14]
+        ]
+      },
+      {
+        q: "你的 Prompt 通常？",
+        options: [
+          ["一句话，爱懂不懂", 4],
+          ["加点背景和要求", 8],
+          ["结构化：角色+任务+约束+输出格式", 12],
+          ["带 few-shot 示例和思维链", 14]
+        ]
+      },
+      {
+        q: "AI 给你的答案不满意时？",
+        options: [
+          ["算了，我自己来", 4],
+          ["重新问一遍", 8],
+          ["指出具体哪里错了，让它改", 12],
+          ["换另一个 AI 交叉验证", 14]
+        ]
+      },
+      {
+        q: "如果现在 AI 断联一天，你会？",
+        options: [
+          ["正好休息", 4],
+          ["有点不方便但还好", 8],
+          ["工作效率减半", 12],
+          ["这班没法上了", 14]
+        ]
+      },
+      {
+        q: "你让 AI 帮你做过最离谱的事是？",
+        options: [
+          ["没用过", 2],
+          ["写情书或道歉信", 8],
+          ["模拟和老板吵架，练习辞职话术", 12],
+          ["分析我前任的朋友圈潜台词", 14]
+        ]
+      },
+      {
+        q: "关于 AI 的未来，你觉得？",
+        options: [
+          ["炒作，过两年就凉了", 4],
+          ["工具而已，替代不了人", 8],
+          ["会改变很多行业", 12],
+          ["我已经在担心被后浪取代了", 14]
+        ]
+      }
+    ];
+
+    const levels = [
+      {
+        minScore: 0, maxScore: 28,
+        title: "AI 难民",
+        subtitle: "还在用 2023 年的互联网？",
+        comment: "你对 AI 的态度是：听说过，没见过。建议从今天开始，每天让 AI 帮你写一条朋友圈文案，培养感情。",
+        shareText: "我的 AI 熟练度：难民级。有人能借我个 ChatGPT 账号吗？🥲"
+      },
+      {
+        minScore: 29, maxScore: 48,
+        title: "AI 散户",
+        subtitle: "偶尔抄底，经常被套",
+        comment: "你会在需要时想起 AI，但还没形成习惯。就像健身房年卡——买了，但没去几次。",
+        shareText: "我的 AI 熟练度：散户级。听说 Prompt 是个好东西，但我还不太会用 🤔"
+      },
+      {
+        minScore: 49, maxScore: 67,
+        title: "AI 包工头",
+        subtitle: "让 AI 搬砖，我数钱",
+        comment: "你已经掌握了让 AI 干活的精髓。周报、文案、代码注释——这些脏活累活都外包出去了。",
+        shareText: "我的 AI 熟练度：包工头级。本人主要工作是管理 AI 员工。🧰"
+      },
+      {
+        minScore: 68, maxScore: 87,
+        title: "AI 合伙人",
+        subtitle: "和硅基生物一起搞事情",
+        comment: "AI 不只是工具，而是你的思维延伸。你们一起脑暴、互相质疑、共同产出。建议报税时把 AI 算成“dependents”。",
+        shareText: "我的 AI 熟练度：合伙人级。我们合伙开公司，它出脑子我出电费。🤝"
+      },
+      {
+        minScore: 88, maxScore: 100,
+        title: "AI 原住民",
+        subtitle: "分不清哪些想法是自己的了",
+        comment: "你已经和 AI 形成了某种共生关系。你的大脑 60% 外包，20% 在摸鱼，剩下 20% 在担心电费。欢迎来到未来。",
+        shareText: "我的 AI 熟练度：原住民级。如果 AI 断电，我也宕机。⚡"
+      }
+    ];
+
+    const shareTemplates = {
+      难民: ["有人能借我个 ChatGPT 账号吗？🥲", "我可能是最后一个不用 AI 的人了🫠"],
+      散户: ["Prompt 是个好东西，但我还不太会用🤔", "AI 就像我的健身卡，买了但没去🏋️"],
+      包工头: ["本人主要工作是管理 AI 员工🧰", "脏活累活都外包，我只负责指指点点🫡"],
+      合伙人: ["我们合伙开公司，它出脑子我出电费🤝", "和 AI 一起脑暴，比和同事效率高🚀"],
+      原住民: ["如果 AI 断电，我也宕机⚡", "我的大脑 60% 已经是外包状态了🧠"]
+    };
+
+    const rawMaxScore = questions.reduce((sum, item) => {
+      const best = Math.max(...item.options.map((opt) => opt[1]));
+      return sum + best;
+    }, 0);
+
+    const heroScreen = document.getElementById("hero-screen");
+    const questionScreen = document.getElementById("question-screen");
+    const resultScreen = document.getElementById("result-screen");
+
+    const startBtn = document.getElementById("start-btn");
+    const restartBtn = document.getElementById("restart-btn");
+    const shareBtn = document.getElementById("share-btn");
+
+    const hudScore = document.getElementById("hud-score");
+    const hudRank = document.getElementById("hud-rank");
+
+    const questionIndex = document.getElementById("question-index");
+    const questionScore = document.getElementById("question-score");
+    const questionText = document.getElementById("question-text");
+    const optionsContainer = document.getElementById("options");
+    const progressTrack = document.getElementById("progress-track");
+    const progressBar = document.getElementById("progress-bar");
+
+    const resultScore = document.getElementById("result-score");
+    const resultMax = document.getElementById("result-max");
+    const scoreOrbit = document.getElementById("score-orbit");
+    const resultLevel = document.getElementById("result-level");
+    const resultComment = document.getElementById("result-comment");
+    const resultBadges = document.getElementById("result-badges");
+
+    const toast = document.getElementById("toast");
+    const starfield = document.querySelector(".starfield");
+
+    let currentQuestion = 0;
+    let rawScore = 0;
+    let userAnswers = [];
+    let currentLevel = null;
+
+    resultMax.textContent = "/100";
+
+    function toDisplayScore(raw) {
+      return Math.round((raw / rawMaxScore) * 100);
+    }
+
+    function getDisplayIncrement(currentRawScore, rawPoints) {
+      const before = toDisplayScore(currentRawScore);
+      const after = toDisplayScore(currentRawScore + rawPoints);
+      return Math.max(0, after - before);
+    }
+
+    function showToast(text) {
+      toast.textContent = text;
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 1400);
+    }
+
+    function createStars(count = 90) {
+      if (!starfield) return;
+      starfield.innerHTML = "";
+      for (let i = 0; i < count; i++) {
+        const star = document.createElement("span");
+        const size = (Math.random() * 2.2 + 1).toFixed(2);
+        star.className = "star";
+        star.style.width = `${size}px`;
+        star.style.height = `${size}px`;
+        star.style.left = `${(Math.random() * 100).toFixed(2)}%`;
+        star.style.top = `${(Math.random() * 100).toFixed(2)}%`;
+        star.style.setProperty("--delay", `${(Math.random() * 4).toFixed(2)}s`);
+        star.style.setProperty("--duration", `${(3.2 + Math.random() * 3.6).toFixed(2)}s`);
+        starfield.appendChild(star);
+      }
+    }
+
+    function updateOrbitProgress(progressPercent) {
+      if (!progressBar || !progressTrack) return;
+      const progress = Math.max(0, Math.min(progressPercent, 100));
+      const styles = getComputedStyle(progressTrack);
+      const orbitWidth = parseFloat(styles.getPropertyValue("--orbit-width")) || 184;
+      const orbitHeight = parseFloat(styles.getPropertyValue("--orbit-height")) || 88;
+      const radius = orbitWidth / 2;
+      const centerX = orbitWidth / 2;
+      const centerY = orbitHeight;
+      const angle = Math.PI * (1 - progress / 100);
+      const shipX = centerX + radius * Math.cos(angle);
+      const shipY = centerY - radius * Math.sin(angle);
+      const progressValue = `${progress.toFixed(2)}%`;
+      progressBar.style.setProperty("--progress", progressValue);
+      progressTrack.style.setProperty("--progress", progressValue);
+      progressBar.style.setProperty("--ship-x", `${shipX.toFixed(2)}px`);
+      progressBar.style.setProperty("--ship-y", `${shipY.toFixed(2)}px`);
+    }
+
+    function updateHud() {
+      hudScore.textContent = `${toDisplayScore(rawScore)} / 100`;
+    }
+
+    function getLevelByScore(finalScore) {
+      return levels.find((level) => finalScore >= level.minScore && finalScore <= level.maxScore) || levels[levels.length - 1];
+    }
+
+    function getShareKey(levelTitle) {
+      if (levelTitle.includes("难民")) return "难民";
+      if (levelTitle.includes("散户")) return "散户";
+      if (levelTitle.includes("包工头")) return "包工头";
+      if (levelTitle.includes("合伙人")) return "合伙人";
+      return "原住民";
+    }
+
+    function getRandomShareLine(level) {
+      const key = getShareKey(level.title);
+      const pool = shareTemplates[key] || [];
+      if (pool.length === 0) return "";
+      const idx = Math.floor(Math.random() * pool.length);
+      return pool[idx];
+    }
+
+    function buildShareUrl() {
+      const shareUrl = new URL(window.location.href);
+      shareUrl.search = "";
+      shareUrl.hash = "";
+      return shareUrl.toString();
+    }
+
+    function composeShareText(level, displayScore) {
+      const randomLine = getRandomShareLine(level);
+      const shareUrl = buildShareUrl();
+      const taobaoLikeCode = `￥AI Native 冒险￥${level.title} ${displayScore}/100 🚀`;
+      return [
+        taobaoLikeCode,
+        `我的测评结果：${level.title}（${displayScore}/100）✨`,
+        randomLine || level.shareText,
+        "点击下面链接，进入首页直接体验测试：👇",
+        shareUrl,
+        "也来测一测你是哪个等级。🤖"
+      ].join("\n");
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    function openShareSheet(text) {
+      const overlay = document.createElement("div");
+      overlay.className = "share-sheet-overlay";
+
+      const panel = document.createElement("div");
+      panel.className = "share-sheet";
+
+      const title = document.createElement("h4");
+      title.className = "share-sheet-title";
+      title.textContent = "分享口令";
+
+      const subtitle = document.createElement("p");
+      subtitle.className = "share-sheet-subtitle";
+      subtitle.textContent = "复制整段发给朋友，对方点开链接可进入首页直接体验测试。";
+
+      const content = document.createElement("div");
+      content.className = "share-sheet-content";
+      content.textContent = text;
+
+      const actions = document.createElement("div");
+      actions.className = "share-sheet-actions";
+
+      const closeBtn = document.createElement("button");
+      closeBtn.className = "btn btn-ghost";
+      closeBtn.type = "button";
+      closeBtn.textContent = "关闭";
+
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "btn";
+      copyBtn.type = "button";
+      copyBtn.textContent = "一键复制并分享";
+
+      actions.appendChild(closeBtn);
+      actions.appendChild(copyBtn);
+      panel.appendChild(title);
+      panel.appendChild(subtitle);
+      panel.appendChild(content);
+      panel.appendChild(actions);
+      overlay.appendChild(panel);
+      document.body.appendChild(overlay);
+
+      closeBtn.addEventListener("click", () => {
+        document.body.removeChild(overlay);
+      });
+
+      copyBtn.addEventListener("click", async () => {
+        const ok = await copyText(text);
+        showToast(ok ? "已复制，直接发给朋友即可" : "复制失败，请手动复制");
+      });
+
+      overlay.addEventListener("click", (event) => {
+        if (event.target === overlay) {
+          document.body.removeChild(overlay);
+        }
+      });
+    }
+
+    function renderQuestion() {
+      const q = questions[currentQuestion];
+      questionText.textContent = q.q;
+      questionIndex.textContent = `关卡 ${currentQuestion + 1} / ${questions.length}`;
+      questionScore.textContent = `得分 ${toDisplayScore(rawScore)} / 100`;
+      const progressPercent = ((currentQuestion + 1) / questions.length) * 100;
+      progressBar.style.width = `${progressPercent}%`;
+      updateOrbitProgress(progressPercent);
+
+      optionsContainer.innerHTML = "";
+
+      q.options.forEach((option, index) => {
+        const displayPoints = getDisplayIncrement(rawScore, option[1]);
+        const btn = document.createElement("button");
+        btn.className = "option-btn slide-in";
+        btn.style.animationDelay = `${index * 0.07}s`;
+        btn.type = "button";
+        btn.innerHTML = `
+          <span class="option-text">${option[0]}</span>
+          <span class="option-points">+${displayPoints}分</span>
+        `;
+
+        btn.addEventListener("click", () => selectOption(index));
+        optionsContainer.appendChild(btn);
+      });
+    }
+
+    function selectOption(index) {
+      const selected = questions[currentQuestion].options[index];
+      const points = selected[1];
+      const displayPoints = getDisplayIncrement(rawScore, points);
+      const optionButtons = Array.from(document.querySelectorAll(".option-btn"));
+
+      optionButtons.forEach((btn, i) => {
+        btn.disabled = true;
+        if (i !== index) {
+          btn.classList.add("dimmed");
+        }
+      });
+
+      const chosen = optionButtons[index];
+      chosen.classList.add("selected");
+      const burst = document.createElement("span");
+      burst.className = "point-burst";
+      burst.textContent = `+${displayPoints}分`;
+      chosen.appendChild(burst);
+
+      rawScore += points;
+      userAnswers.push({ question: currentQuestion, option: index, points });
+      updateHud();
+      questionScore.textContent = `得分 ${toDisplayScore(rawScore)} / 100`;
+
+      setTimeout(() => {
+        currentQuestion += 1;
+
+        if (currentQuestion < questions.length) {
+          questionScreen.classList.remove("fade-in");
+          questionScreen.classList.add("fade-out");
+
+          setTimeout(() => {
+            questionScreen.classList.remove("fade-out");
+            questionScreen.classList.add("fade-in");
+            renderQuestion();
+          }, 290);
+        } else {
+          showResult();
+        }
+      }, 900);
+    }
+
+    function renderBadges(level) {
+      const names = [
+        `等级词条：${level.title}`,
+        level.subtitle
+      ];
+      resultBadges.innerHTML = "";
+
+      names.forEach((name, idx) => {
+        const el = document.createElement("span");
+        el.className = "badge";
+        el.style.animationDelay = `${idx * 0.12}s`;
+        el.textContent = name;
+        resultBadges.appendChild(el);
+      });
+    }
+
+    function animateResult(finalScore) {
+      let display = 0;
+      const duration = 850;
+      const step = Math.max(1, Math.round(finalScore / (duration / 16)));
+
+      const timer = setInterval(() => {
+        display = Math.min(display + step, finalScore);
+        resultScore.textContent = display;
+        const degrees = (display / 100) * 360;
+        scoreOrbit.style.background = `conic-gradient(var(--gold) ${degrees}deg, rgba(219, 185, 111, 0.18) ${degrees}deg)`;
+
+        if (display >= finalScore) {
+          clearInterval(timer);
+        }
+      }, 16);
+    }
+
+    function showResult() {
+      questionScreen.style.display = "none";
+      resultScreen.style.display = "block";
+      resultScreen.classList.add("fade-in");
+
+      const displayScore = toDisplayScore(rawScore);
+      currentLevel = getLevelByScore(displayScore);
+      resultLevel.textContent = currentLevel.title;
+      resultComment.textContent = `${currentLevel.subtitle}。${currentLevel.comment}`;
+      hudRank.textContent = currentLevel.title;
+
+      animateResult(displayScore);
+      renderBadges(currentLevel);
+      updateHud();
+    }
+
+    function startGame() {
+      heroScreen.style.display = "none";
+      questionScreen.style.display = "block";
+      questionScreen.classList.add("fade-in");
+      currentQuestion = 0;
+      rawScore = 0;
+      userAnswers = [];
+      currentLevel = null;
+      hudRank.textContent = "测评进行中";
+      updateHud();
+      renderQuestion();
+    }
+
+    function restartGame() {
+      currentQuestion = 0;
+      rawScore = 0;
+      userAnswers = [];
+      currentLevel = null;
+      resultScreen.style.display = "none";
+      heroScreen.style.display = "block";
+      heroScreen.classList.add("fade-in");
+      hudRank.textContent = "待评估";
+      resultScore.textContent = "0";
+      scoreOrbit.style.background = "conic-gradient(var(--gold) 0deg, rgba(219, 185, 111, 0.18) 0deg)";
+      updateOrbitProgress(0);
+      updateHud();
+    }
+
+    async function copyShareText() {
+      const displayScore = toDisplayScore(rawScore);
+      const level = currentLevel || getLevelByScore(displayScore);
+      const text = composeShareText(level, displayScore);
+      openShareSheet(text);
+    }
+
+    startBtn.addEventListener("click", startGame);
+    restartBtn.addEventListener("click", restartGame);
+    shareBtn.addEventListener("click", copyShareText);
+
+    createStars();
+    updateOrbitProgress(0);
+    updateHud();
+  </script>
+</body>
+</html>
