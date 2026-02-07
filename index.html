@@ -561,7 +561,7 @@
       padding: 0.95rem 1rem;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
       gap: 1rem;
       cursor: pointer;
       transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
@@ -610,25 +610,7 @@
       font-size: 1.01rem;
       font-weight: 500;
       line-height: 1.5;
-    }
-
-    .option-points {
-      color: #a06d3d;
-      font-size: 0.88rem;
-      white-space: nowrap;
-      font-weight: 700;
-    }
-
-    .point-burst {
-      position: absolute;
-      right: 0.9rem;
-      top: -4px;
-      color: #a8782b;
-      font-size: 0.82rem;
-      animation: floatOut 1s ease forwards;
-      pointer-events: none;
-      text-shadow: 0 0 8px rgba(249, 202, 36, 0.45);
-      font-weight: 700;
+      width: 100%;
     }
 
     .result-wrap {
@@ -1321,7 +1303,22 @@
       原住民: ["如果 AI 断电，我也宕机⚡", "我的大脑 60% 已经是外包状态了🧠"]
     };
 
-    const rawMaxScore = questions.reduce((sum, item) => {
+    function shuffleArray(list) {
+      const arr = [...list];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // Randomize option order on each page load to reduce answer gaming.
+    const randomizedQuestions = questions.map((item) => ({
+      q: item.q,
+      options: shuffleArray(item.options.map((opt) => [opt[0], opt[1]]))
+    }));
+
+    const rawMaxScore = randomizedQuestions.reduce((sum, item) => {
       const best = Math.max(...item.options.map((opt) => opt[1]));
       return sum + best;
     }, 0);
@@ -1363,12 +1360,6 @@
 
     function toDisplayScore(raw) {
       return Math.round((raw / rawMaxScore) * 100);
-    }
-
-    function getDisplayIncrement(currentRawScore, rawPoints) {
-      const before = toDisplayScore(currentRawScore);
-      const after = toDisplayScore(currentRawScore + rawPoints);
-      return Math.max(0, after - before);
     }
 
     function showToast(text) {
@@ -1527,29 +1518,25 @@
     }
 
     function renderQuestion() {
-      const q = questions[currentQuestion];
+      const q = randomizedQuestions[currentQuestion];
       questionText.textContent = q.q;
-      questionIndex.textContent = `关卡 ${currentQuestion + 1} / ${questions.length}`;
+      questionIndex.textContent = `关卡 ${currentQuestion + 1} / ${randomizedQuestions.length}`;
       questionScore.textContent = `得分 ${toDisplayScore(rawScore)} / 100`;
       if (typeof trackQuestion === "function") {
         trackQuestion(currentQuestion + 1);
       }
-      const progressPercent = ((currentQuestion + 1) / questions.length) * 100;
+      const progressPercent = ((currentQuestion + 1) / randomizedQuestions.length) * 100;
       progressBar.style.width = `${progressPercent}%`;
       updateOrbitProgress(progressPercent);
 
       optionsContainer.innerHTML = "";
 
       q.options.forEach((option, index) => {
-        const displayPoints = getDisplayIncrement(rawScore, option[1]);
         const btn = document.createElement("button");
         btn.className = "option-btn slide-in";
         btn.style.animationDelay = `${index * 0.07}s`;
         btn.type = "button";
-        btn.innerHTML = `
-          <span class="option-text">${option[0]}</span>
-          <span class="option-points">+${displayPoints}分</span>
-        `;
+        btn.innerHTML = `<span class="option-text">${option[0]}</span>`;
 
         btn.addEventListener("click", () => selectOption(index));
         optionsContainer.appendChild(btn);
@@ -1557,9 +1544,8 @@
     }
 
     function selectOption(index) {
-      const selected = questions[currentQuestion].options[index];
+      const selected = randomizedQuestions[currentQuestion].options[index];
       const points = selected[1];
-      const displayPoints = getDisplayIncrement(rawScore, points);
       const optionButtons = Array.from(document.querySelectorAll(".option-btn"));
 
       optionButtons.forEach((btn, i) => {
@@ -1571,10 +1557,6 @@
 
       const chosen = optionButtons[index];
       chosen.classList.add("selected");
-      const burst = document.createElement("span");
-      burst.className = "point-burst";
-      burst.textContent = `+${displayPoints}分`;
-      chosen.appendChild(burst);
 
       rawScore += points;
       userAnswers.push({ question: currentQuestion, option: index, points });
@@ -1584,7 +1566,7 @@
       setTimeout(() => {
         currentQuestion += 1;
 
-        if (currentQuestion < questions.length) {
+        if (currentQuestion < randomizedQuestions.length) {
           questionScreen.classList.remove("fade-in");
           questionScreen.classList.add("fade-out");
 
